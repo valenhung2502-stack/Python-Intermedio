@@ -1,17 +1,5 @@
-from modelo_app import alta, borrar_registro, modificar_registro
-from modelo_app import base_viajes
+from vista import App_viajes
 
-def alta(dni, nombre_apellido, origen, numero_pasaje, horario, destino, fecha):
-    return alta(dni, nombre_apellido, origen, numero_pasaje, horario, destino, fecha)
-
-def borrar_registro(tree):
-    return borrar_registro(tree)
-
-def modificar_registro(tree, dni, nombre_apellido, origen, numero_pasaje, horario, destino, fecha):
-    return modificar_registro(tree, dni, nombre_apellido, origen, numero_pasaje, horario, destino, fecha)
-
-def listar_viajes():
-    con = base_viajes()
-    cursor = con.cursor()
-    datos = cursor.execute("SELECT * FROM viajes ORDEN BY dni ASC")
-    return datos.fetchall()
+if __name__ == '__main__':
+    app = App_viajes()
+    app.mainloop()
