@@ -1,86 +1,152 @@
-from modelo_app import base_viajes
-from controlador import alta,borrar_registro,modificar_registro
-from controlador import listar_viajes
-from tkinter import *
-from tkinter import ttk
+import tkinter as tk
+from tkinter import ttk, messagebox
+import sqlite3
+import re
+from modelo import ViajesDB
 
-def actualizar_treeview(mitreview):
-    records = mitreview.get_children()
-    for element in records:
-        mitreview.delete(element)
-    for fila in listar_viajes():
-        mitreview.insert("",0, values = fila)
+class App_viajes(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Administrar viajes")
+        self.db = ViajesDB()
+        self.patrones = {
+            "nombre": re.compile(r"^[A-Za-záéíóúÁÉÍÓÚñN]{1,20}$"),
+            "apellido": re.compile(r"^[A-Za-záéíóúÁÉÍÓÚñN]{1,20}$"),
+            "pasaje": re.compile(r"^[A-Za-z0-9]{1,20}$"),
+            "horario": re.compile(r"^[0-9:]{1,5}$"),
+            "dni": re.compile(r"^[0-9]{1,10}$"),
+            "destino": re.compile(r"^[A-Za-záéíóúÁÉÍÓÚñN]{1,20}$"),
+            "fecha": re.compile(r"^[0-9/-]{1,20}$"),
+        }
+        self.var_nombre = tk.StringVar()
+        self.var_apellido = tk.StringVar()
+        self.var_pasaje = tk.StringVar()
+        self.var_horario = tk.StringVar()
+        self.var_dni = tk.StringVar()
+        self.var_destino = tk.StringVar()
+        self.var_fecha = tk.StringVar()
 
-    """sql = "SELECT * FROM viajes ORDER BY dni ASC"
-    con = base_viajes()
-    cursor = con.cursor()
-    datos = cursor.execute(sql)"""
-    """resultado = datos.fetchall()
-    for fila in resultado:
-        mitreview.insert("", 0, values=fila)"""
+        self._construir_formulario()
+        self._construir_treeview()
+        self.cargar_tree()
 
-root = Tk()
-root.title("Administrar Viajes")
+    def _construir_formulario(self):
+        titulo = tk.Label(
+            self,
+            text="Ingrese los datos del viaje",
+            bg="purple",
+            fg="thistle1",
+            width=60
+        )
+        titulo.grid(row=0, column=0, columnspan=4, pady=5, sticky="we")
 
-titulo = Label(root, text="Ingrese los datos del viaje", bg="DarkOrchid3", fg="thistle1", height=1, width=60)
-titulo.grid(row=0, column=0, columnspan=4, padx=1, pady=1, sticky=W+E)
+        tk.Label(self, text="Nombre").grid(row=1, column=0, sticky="w")
+        tk.Label(self, text="Apellido").grid(row=2, column=0, sticky="w")
+        tk.Label(self, text="Pasaje").grid(row=3, column=0, sticky="w")
+        tk.Label(self, text="Horario").grid(row=4, column=0, sticky="w")
+        tk.Label(self, text="DNI").grid(row=5, column=0, sticky="w")
+        tk.Label(self, text="Destino").grid(row=1, column=2, sticky="w")
+        tk.Label(self, text="Fecha").grid(row=2, column=2, sticky="w")
 
-Label(root, text="DNI").grid(row=1, column=0, sticky=W)
-Label(root, text="Nombre y apellido").grid(row=2, column=0, sticky=W)
-Label(root, text="Origen").grid(row=3, column=0, sticky=W)
-Label(root, text="Número de pasaje").grid(row=4, column=0, sticky=W)
-Label(root, text="Horario").grid(row=1, column=2, sticky=W)
-Label(root, text="Destino").grid(row=2, column=2, sticky=W)
-Label(root, text="Fecha").grid(row=3, column=2, sticky=W)
+        w = 20
+        tk.Entry(self, textvariable=self.var_nombre, width=w).grid(row=1, column=1)
+        tk.Entry(self, textvariable=self.var_apellido, width=w).grid(row=2, column=1)
+        tk.Entry(self, textvariable=self.var_pasaje, width=w).grid(row=3, column=1)
+        tk.Entry(self, textvariable=self.var_horario, width=w).grid(row=4, column=1)
+        tk.Entry(self, textvariable=self.var_dni, width=w).grid(row=5, column=1)
+        tk.Entry(self, textvariable=self.var_destino, width=w).grid(row=1, column=3)
+        tk.Entry(self, textvariable=self.var_fecha, width=w).grid(row=2, column=3)
 
-e_val, a_val, b_val, c_val, d_val, f_val, g_val = StringVar(), StringVar(), StringVar(), StringVar(), StringVar(), StringVar(), StringVar()
-w_ancho = 20
+        tk.Button(self, text="Guardar", command=self.on_guardar).grid(row=6, column=1, pady=5)
+        tk.Button(self, text="Eliminar", command=self.on_borrar).grid(row=6, column=2)
+        tk.Button(self, text="Modificar", command=self.on_modificar).grid(row=6, column=3)
 
-entrada_dni = Entry(root, textvariable=e_val, width=w_ancho)  # dni
-entrada_dni.grid(row=1, column=1)
-entrada_nombre = Entry(root, textvariable=a_val, width=w_ancho)  # nombre_apellido
-entrada_nombre.grid(row=2, column=1)
-entrada_origen = Entry(root, textvariable=b_val, width=w_ancho)  # origen
-entrada_origen.grid(row=3, column=1)
-entrada_pasaje = Entry(root, textvariable=c_val, width=w_ancho)  # numero_pasaje
-entrada_pasaje.grid(row=4, column=1)
-entrada_horario = Entry(root, textvariable=d_val, width=w_ancho)  # horario
-entrada_horario.grid(row=1, column=3)
-entrada_destino = Entry(root, textvariable=f_val, width=w_ancho)  # destino
-entrada_destino.grid(row=2, column=3)
-entrada_fecha = Entry(root, textvariable=g_val, width=w_ancho)  # fecha
-entrada_fecha.grid(row=3, column=3)
+    def _construir_treeview(self):
+        self.tree = ttk.Treeview(self)
+        self.tree["columns"] = ("col1","col2","col3","col4","col5","col6",)
+        self.tree.column("#0", width=90, minwidth=50, anchor="w")
 
-tree = ttk.Treeview(root)
-tree["columns"] = ("col1", "col2", "col3", "col4", "col5", "col6", "col7")
-tree.column("#0", width=0, stretch=NO)
-tree.column("col1", width=120, minwidth=80)
-tree.column("col2", width=200, minwidth=80)
-tree.column("col3", width=200, minwidth=80)
-tree.column("col4", width=200, minwidth=80)
-tree.column("col5", width=120, minwidth=80)
-tree.column("col6", width=200, minwidth=80)
-tree.column("col7", width=200, minwidth=80)
-tree.heading("col1", text="DNI")
-tree.heading("col2", text="Nombre y apellido")
-tree.heading("col3", text="Origen")
-tree.heading("col4", text="Número de pasaje")
-tree.heading("col5", text="Horario")
-tree.heading("col6", text="Destino")
-tree.heading("col7", text="Fecha")
-tree.grid(row=10, column=0, columnspan=4)
+        for col in self.tree["columns"]:
+            self.tree.column(col, width=120, minwidth=80)
 
-boton_alta = Button(root, text="Guardar", command=lambda: alta(e_val, a_val, b_val, c_val, d_val, f_val, g_val, tree))
-boton_alta.grid(row=6, column=1)
+        self.tree.heading("#0", text="DNI")
+        self.tree.heading("col1", text="Nombre")
+        self.tree.heading("col2", text="Apellido")
+        self.tree.heading("col3", text="Pasaje")
+        self.tree.heading("col4", text="Horario")
+        self.tree.heading("col5", text="Destino")
+        self.tree.heading("col6", text="Fecha")
 
-boton_borrar = Button(root, text="Eliminar", command=lambda: borrar_registro(tree))
-boton_borrar.grid(row=6, column=2)
+        self.tree.grid(row=10,column=0, columnspan=4, padx=5, pady=5)
 
-boton_modificar = Button(
-    root, text="Modificar",
-    command=lambda: modificar_registro(tree, e_val, a_val, b_val, c_val, d_val, f_val, g_val)
-)
-boton_modificar.grid(row=6, column=3)
+    def validar_campos(self):
+        datos  = {
+            "nombre": self.var_nombre.get(),
+            "apellido": self.var_apellido.get(),
+            "pasaje": self.var_pasaje.get(),
+            "hoario": self.var_horario.get(),
+            "dni": self.var_dni.get(),
+            "destino": self.var_destino.get(),
+            "fecha": self.var_fecha.get(),
+        }
+        for campo, valor in datos.items():
+            if not self.patrones[campo].match(valor):
+                messagebox.showerror("Error", f"{campo.capitalize()} inválido")
+                return None
+            return datos
 
-actualizar_treeview(tree)
-root.mainloop()
+    def cargar_tree(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        for fila in self.db.obtener_registros():
+            self.tree.insert("", "end", text=fila[0], values=fila[1:])
+
+    def on_guardar(self):
+        datos = self.validar_campos()
+        if not datos:
+            return
+        try:
+            self.db.agregar(
+                datos["dni"],
+                datos["nombre"],
+                datos["apellido"],
+                datos["pasaje"],
+                datos["horario"],
+                datos["destino"],
+                datos["fecha"],
+            )
+
+        except sqlite3.IntegrityError:
+            messagebox.showerror("Error", "El DNI ya existe")
+        self.cargar_tree()
+
+    def on_borrar(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showerror("Error", "Seleccione un registro para eliminar")
+            return
+        item = self.tree.item(sel[0])
+        dni = item["text"]
+        self.db.borrar(dni)
+        self.cargar_tree()
+
+    def on_modificar(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showerror("Error", "Seleccione un registro para modificar")
+            return
+        datos = self.validar_campos()
+        if not datos:
+            return
+        item = self.tree.item(sel[0])
+        dni_original = item["text"]
+        self.db.modificar(
+            dni_original,
+            datos["nombre"],
+            datos["apellido"],
+            datos["pasaje"],
+            datos["horario"],
+            datos["destino"],
+            datos["fecha"],
+        )
+        self.cargar_tree()
