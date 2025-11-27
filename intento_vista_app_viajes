@@ -1,0 +1,86 @@
+from modelo_app import base_viajes
+from controlador import alta,borrar_registro,modificar_registro
+from controlador import listar_viajes
+from tkinter import *
+from tkinter import ttk
+
+def actualizar_treeview(mitreview):
+    records = mitreview.get_children()
+    for element in records:
+        mitreview.delete(element)
+    for fila in listar_viajes():
+        mitreview.insert("",0, values = fila)
+
+    """sql = "SELECT * FROM viajes ORDER BY dni ASC"
+    con = base_viajes()
+    cursor = con.cursor()
+    datos = cursor.execute(sql)"""
+    """resultado = datos.fetchall()
+    for fila in resultado:
+        mitreview.insert("", 0, values=fila)"""
+
+root = Tk()
+root.title("Administrar Viajes")
+
+titulo = Label(root, text="Ingrese los datos del viaje", bg="DarkOrchid3", fg="thistle1", height=1, width=60)
+titulo.grid(row=0, column=0, columnspan=4, padx=1, pady=1, sticky=W+E)
+
+Label(root, text="DNI").grid(row=1, column=0, sticky=W)
+Label(root, text="Nombre y apellido").grid(row=2, column=0, sticky=W)
+Label(root, text="Origen").grid(row=3, column=0, sticky=W)
+Label(root, text="Número de pasaje").grid(row=4, column=0, sticky=W)
+Label(root, text="Horario").grid(row=1, column=2, sticky=W)
+Label(root, text="Destino").grid(row=2, column=2, sticky=W)
+Label(root, text="Fecha").grid(row=3, column=2, sticky=W)
+
+e_val, a_val, b_val, c_val, d_val, f_val, g_val = StringVar(), StringVar(), StringVar(), StringVar(), StringVar(), StringVar(), StringVar()
+w_ancho = 20
+
+entrada_dni = Entry(root, textvariable=e_val, width=w_ancho)  # dni
+entrada_dni.grid(row=1, column=1)
+entrada_nombre = Entry(root, textvariable=a_val, width=w_ancho)  # nombre_apellido
+entrada_nombre.grid(row=2, column=1)
+entrada_origen = Entry(root, textvariable=b_val, width=w_ancho)  # origen
+entrada_origen.grid(row=3, column=1)
+entrada_pasaje = Entry(root, textvariable=c_val, width=w_ancho)  # numero_pasaje
+entrada_pasaje.grid(row=4, column=1)
+entrada_horario = Entry(root, textvariable=d_val, width=w_ancho)  # horario
+entrada_horario.grid(row=1, column=3)
+entrada_destino = Entry(root, textvariable=f_val, width=w_ancho)  # destino
+entrada_destino.grid(row=2, column=3)
+entrada_fecha = Entry(root, textvariable=g_val, width=w_ancho)  # fecha
+entrada_fecha.grid(row=3, column=3)
+
+tree = ttk.Treeview(root)
+tree["columns"] = ("col1", "col2", "col3", "col4", "col5", "col6", "col7")
+tree.column("#0", width=0, stretch=NO)
+tree.column("col1", width=120, minwidth=80)
+tree.column("col2", width=200, minwidth=80)
+tree.column("col3", width=200, minwidth=80)
+tree.column("col4", width=200, minwidth=80)
+tree.column("col5", width=120, minwidth=80)
+tree.column("col6", width=200, minwidth=80)
+tree.column("col7", width=200, minwidth=80)
+tree.heading("col1", text="DNI")
+tree.heading("col2", text="Nombre y apellido")
+tree.heading("col3", text="Origen")
+tree.heading("col4", text="Número de pasaje")
+tree.heading("col5", text="Horario")
+tree.heading("col6", text="Destino")
+tree.heading("col7", text="Fecha")
+tree.grid(row=10, column=0, columnspan=4)
+
+boton_alta = Button(root, text="Guardar", command=lambda: alta(e_val, a_val, b_val, c_val, d_val, f_val, g_val, tree))
+boton_alta.grid(row=6, column=1)
+
+boton_borrar = Button(root, text="Eliminar", command=lambda: borrar_registro(tree))
+boton_borrar.grid(row=6, column=2)
+
+boton_modificar = Button(
+    root, text="Modificar",
+    command=lambda: modificar_registro(tree, e_val, a_val, b_val, c_val, d_val, f_val, g_val)
+)
+boton_modificar.grid(row=6, column=3)
+
+actualizar_treeview(tree)
+root.mainloop()
