@@ -1,5 +1,5 @@
-from intento_vista_app_viajes import App_viajes
 from borrador_modelo_app import ViajesDB
+
 class Controlador:
     def __init__(self):
         self.modelo = ViajesDB()
@@ -19,5 +19,8 @@ class Controlador:
         return self.modelo.borrar(dni)
 
 if __name__ == '__main__':
+
+    from intento_vista_app_viajes import App_viajes
+
     app = App_viajes()
     app.mainloop()
