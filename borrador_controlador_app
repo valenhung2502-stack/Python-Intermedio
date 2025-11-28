@@ -1,5 +1,0 @@
-from vista import App_viajes
-
-if __name__ == '__main__':
-    app = App_viajes()
-    app.mainloop()
